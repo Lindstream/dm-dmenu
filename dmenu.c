@@ -56,6 +56,7 @@ static int inputw, promptw;
 static size_t cursor = 0;
 static Atom clip, utf8;
 static Item *items = NULL;
+static size_t nItems;
 static Item *matches, *matchend;
 static Item *prev, *curr, *next, *sel;
 static Window win;
@@ -460,56 +461,142 @@ keypress(XKeyEvent *ev) {
 	drawmenu();
 }
 
+int levenshtein(const char *s, const int ls, const char *t, const int lt) {
+	int d[ls + 1][lt + 1];
+
+	for (int i = 0; i <= ls; i++)
+		for (int j = 0; j <= lt; j++)
+			d[i][j] = -1;
+
+	int dist(int i, int j) {
+		if (d[i][j] >= 0) return d[i][j];
+
+		const char si = tolower(s[i]);
+		const char tj = tolower(t[j]);
+
+		int x;
+		if (i == ls)
+			x = lt - j;
+		else if (j == lt)
+			x = ls - i;
+		else if (si == tj)
+			x = dist(i + 1, j + 1);
+		else {
+			x = dist(i + 1, j + 1);
+
+			int y;
+			if ((y = dist(i, j + 1)) < x) x = y;
+			if ((y = dist(i + 1, j)) < x) x = y;
+			x++;
+		}
+
+		return d[i][j] = x;
+	}
+
+	return dist(0, 0);
+}
+
+// worst case O(n*m*n)
+int matchFuzzy(const char *input, const int inputLength, const char *target, const int targetLength) {
+	if (inputLength == 0 || targetLength == 0) return 0;
+
+	int fitness = 0;
+
+	for (int j = 0; j < targetLength; ++j) {
+		for (int i = 0; i < inputLength; ++i) {
+			if (input[i] != target[j]) continue;
+			fitness++;
+
+			int multiplier = 1;
+			for (int k = i + 1; k < inputLength; ++k) {
+				const int jk = j + (k - i);
+				if (!(jk < targetLength)) break;
+				if (input[k] != target[jk]) break;
+
+				multiplier++;
+			}
+
+			fitness *= multiplier;
+		}
+	}
+
+	return fitness;
+}
+
+int matchLevenshtein(const char *input, const int inputLength, const char *target, const int targetLength) {
+	int distance = levenshtein(input, inputLength, target, targetLength);
+
+	// early exit if no letters were relevant
+	if (distance == targetLength) return 0;
+
+	// divide and conquer?
+	if (targetLength > inputLength) {
+		for (size_t j = 0; j < targetLength; j++) {
+			if (target[j] != input[0]) continue;
+
+			const char* subTarget = target + j;
+			const size_t subTargetLength = MIN(inputLength, targetLength - j);
+
+			distance = MIN(distance, levenshtein(subTarget, subTargetLength, input, inputLength));
+			if (distance == 0) break;
+		}
+	}
+
+	// MAXIMISING fitness
+	return 0x7fffffff - distance;
+}
+
+// O(m)
+int matchNaive(const char *input, const int inputLength, const char *target, const int targetLength) {
+	int fitness = 0;
+
+	for (int i = 0, j = 0; i < inputLength && j < targetLength; ++j) {
+		if (input[i] != target[j]) continue;
+
+		++i;
+		++fitness;
+	}
+
+	return fitness;
+}
+
 void
 match(void) {
-	static char **tokv = NULL;
-	static int tokn = 0;
+	int fitnesses[nItems];
+	size_t sortIndexes[nItems];
 
-	char buf[sizeof text], *s;
-	int i, tokc = 0;
-	size_t len;
-	Item *item, *lprefix, *lsubstr, *prefixend, *substrend;
+	int sortByFitness(const void *a, const void *b) {
+		const size_t aa = *((size_t *)a);
+		const size_t bb = *((size_t *)b);
 
-	strcpy(buf, text);
-	/* separate input text into tokens to be matched individually */
-	for(s = strtok(buf, " "); s; tokv[tokc-1] = s, s = strtok(NULL, " "))
-		if(++tokc > tokn && !(tokv = realloc(tokv, ++tokn * sizeof *tokv)))
-			die("cannot realloc %u bytes\n", tokn * sizeof *tokv);
-	len = tokc ? strlen(tokv[0]) : 0;
+		if (fitnesses[aa] > fitnesses[bb]) return -1;
+		if (fitnesses[aa] < fitnesses[bb]) return 1;
+		return 0;
+	}
 
-	matches = lprefix = lsubstr = matchend = prefixend = substrend = NULL;
-	for(item = items; item && item->text; item++) {
-		for(i = 0; i < tokc; i++)
-			if(!fstrstr(item->text, tokv[i]))
-				break;
-		if(i != tokc) /* not all tokens match */
-			continue;
-		/* exact matches go first, then prefixes, then substrings */
-		if(!tokc || !fstrncmp(tokv[0], item->text, len+1))
-			appenditem(item, &matches, &matchend);
-		else if(!fstrncmp(tokv[0], item->text, len))
-			appenditem(item, &lprefix, &prefixend);
-		else
-			appenditem(item, &lsubstr, &substrend);
+	const int textLength = strlen(text);
+
+	for (size_t i = 0; i < nItems; ++i) {
+		sortIndexes[i] = i;
+
+		const char* itemText = items[i].text;
+		const int itemTextLength = strlen(itemText);
+
+		fitnesses[i] = matchLevenshtein(text, textLength, itemText, itemTextLength);
 	}
-	if(lprefix) {
-		if(matches) {
-			matchend->right = lprefix;
-			lprefix->left = matchend;
-		}
-		else
-			matches = lprefix;
-		matchend = prefixend;
+
+	if (textLength > 0) {
+		qsort(sortIndexes, nItems, sizeof (size_t), sortByFitness);
 	}
-	if(lsubstr) {
-		if(matches) {
-			matchend->right = lsubstr;
-			lsubstr->left = matchend;
-		}
-		else
-			matches = lsubstr;
-		matchend = substrend;
+
+	matches = matchend = NULL;
+
+	for (size_t i = 0; i < nItems; ++i) {
+		const size_t ii = sortIndexes[i];
+
+		appenditem(&items[ii], &matches, &matchend);
 	}
+
 	curr = sel = matches;
 	calcoffsets();
 }
@@ -556,8 +643,11 @@ readstdin(void) {
 		if(strlen(items[i].text) > max)
 			max = strlen(maxstr = items[i].text);
 	}
+
 	if(items)
 		items[i].text = NULL;
+
+	nItems = i;
 	inputw = maxstr ? TEXTW(maxstr) : 0;
 	lines = MIN(lines, i);
 }
