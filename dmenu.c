@@ -94,6 +94,14 @@ main(int argc, char *argv[]) {
 			fstrncmp = strncasecmp;
 			fstrstr = cistrstr;
 		}
+	    else if(!strcmp(argv[i], "-centerx"))
+	      centerX = True;
+	    else if(!strcmp(argv[i], "-centery"))
+	      centerY = True;
+	    else if(!strcmp(argv[i], "-center")) {
+	      centerX = True;
+	      centerY = True;
+	    }
 		else if(i+1 == argc)
 			usage();
 		/* these options take one argument */
@@ -113,6 +121,8 @@ main(int argc, char *argv[]) {
 			selbgcolor = argv[++i];
 		else if(!strcmp(argv[i], "-sf"))  /* selected foreground color */
 			selfgcolor = argv[++i];
+		else if(!strcmp(argv[i], "-w"))
+      		width = atoi(argv[++i]);
 		else
 			usage();
 
@@ -731,7 +741,10 @@ setup(void) {
 			for(i = 0; i < n; i++)
 				if(INTERSECT(x, y, 1, 1, info[i]))
 					break;
-
+		
+		sh = info[i].height;
+		sw = info[i].width;
+		
 		x = info[i].x_org;
 		y = info[i].y_org + (topbar ? 0 : info[i].height - mh);
 		mw = info[i].width;
@@ -747,6 +760,25 @@ setup(void) {
 	promptw = (prompt && *prompt) ? TEXTW(prompt) : 0;
 	inputw = MIN(inputw, mw/3);
 	match();
+
+	
+	if(width != 0) {
+		mw = width;
+
+		/* if no width was specified, dmenu will span the entire screen, so we don't
+		 * need to center */
+		if(centerX) {
+			x = x + ((sw - width) / 2);
+		}
+
+		/* ditto, for the height */
+		if (centerY) {
+			y = y + ((sh - mh) / 2);
+		}
+		
+	}
+
+
 
 	/* create menu window */
 	swa.override_redirect = True;
