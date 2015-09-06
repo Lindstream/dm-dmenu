@@ -50,6 +50,8 @@ static void run(void);
 static void setup(void);
 static void usage(void);
 
+static size_t utf8length();
+
 static char text[BUFSIZ] = "";
 static int bh, mw, mh;
 static int inputw, promptw;
@@ -94,6 +96,8 @@ main(int argc, char *argv[]) {
 			fstrncmp = strncasecmp;
 			fstrstr = cistrstr;
 		}
+		else if(!strcmp(argv[i], "-mask")) /* password-style input */
+      		maskedinput = True;
 	    else if(!strcmp(argv[i], "-centerx"))
 	      centerX = True;
 	    else if(!strcmp(argv[i], "-centery"))
@@ -197,6 +201,19 @@ cleanup(void) {
 	XCloseDisplay(dpy);
 }
 
+const char *
+createmaskinput(char *maskinput, int length)
+{
+  if (length <= 0) {
+    *maskinput = '\0';
+  } else {
+    memset(maskinput, '*', length);
+    maskinput[length] = '\0';
+  }
+
+  return (maskinput);
+}
+
 char *
 cistrstr(const char *s, const char *sub) {
 	size_t len;
@@ -210,6 +227,8 @@ cistrstr(const char *s, const char *sub) {
 void
 drawmenu(void) {
 	int curpos;
+  	char maskinput[sizeof text];
+  	int length = maskedinput ? utf8length() : cursor;
 	Item *item;
 	int x = 0, y = 0, h = bh, w;
 
@@ -224,9 +243,9 @@ drawmenu(void) {
 	/* draw input field */
 	w = (lines > 0 || !matches) ? mw - x : inputw;
 	drw_setscheme(drw, &scheme[SchemeNorm]);
-	drw_text(drw, x, 0, w, bh, text, 0);
+	drw_text(drw, x, 0, w, bh, maskedinput ? createmaskinput(maskinput, length) : text, 0);
 
-	if((curpos = TEXTNW(text, cursor) + bh/2 - 2) < w) {
+	if((curpos = TEXTNW(maskedinput ? maskinput : text, length) + bh/2 - 2) < w) {
 		drw_setscheme(drw, &scheme[SchemeNorm]);
 		drw_rect(drw, x + curpos + 2, 2, 1, bh - 4, 1, 1, 0);
 	}
@@ -620,6 +639,22 @@ nextrune(int inc) {
 	return n;
 }
 
+/* UTF-8 length for password */
+  size_t
+utf8length()
+{
+  ssize_t n = cursor - 1, length = 0;
+
+  while (n >= 0) {
+    for (; n - 1 >= 0 && (text[n] & 0xc0) == 0x80; n--)
+      ;
+    n--;
+    length++;
+  }
+
+  return (length);
+}
+
 void
 paste(void) {
 	char *p, *q;
@@ -775,7 +810,7 @@ setup(void) {
 		if (centerY) {
 			y = y + ((sh - mh) / 2);
 		}
-		
+
 	}
 
 

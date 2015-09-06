@@ -21,6 +21,7 @@ static unsigned int lines      = 0;
 static Bool centerX            = False;
 static Bool centerY            = False;
 static int width               = 400;
+static int maskedinput         = False;
 
 
 
