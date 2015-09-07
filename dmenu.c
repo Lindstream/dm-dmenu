@@ -841,6 +841,7 @@ setup(void) {
 void
 usage(void) {
 	fputs("usage: dmenu [-b] [-f] [-i] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
-	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
+	      "             [-w width] [-lh lineheight] [-center] [-centerx] [-centery]\n", stderr);
+	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-mask] [-v]\n", stderr);
 	exit(1);
 }
