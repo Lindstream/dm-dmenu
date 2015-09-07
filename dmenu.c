@@ -111,6 +111,8 @@ main(int argc, char *argv[]) {
 		/* these options take one argument */
 		else if(!strcmp(argv[i], "-l"))   /* number of lines in vertical list */
 			lines = atoi(argv[++i]);
+    	else if(!strcmp(argv[i], "-lh"))   /* minimum height of single line */
+      		line_height = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-m"))
 			mon = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
@@ -749,7 +751,9 @@ setup(void) {
 	utf8 = XInternAtom(dpy, "UTF8_STRING", False);
 
 	/* calculate menu geometry */
-	bh = drw->fonts[0]->h + 2;
+	/* bh = drw->fonts[0]->h + 2; */
+  	bh = (line_height > (drw->fonts[0]->h + 2) ? line_height : (drw->fonts[0]->h + 2));
+
 	lines = MAX(lines, 0);
 	mh = (lines + 1) * bh;
 #ifdef XINERAMA

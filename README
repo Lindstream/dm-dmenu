@@ -1,24 +1,20 @@
-dmenu - dynamic menu
+Dream Machine: dmenu - dynamic menu
 ====================
 dmenu is an efficient dynamic menu for X.
 
+Modifications:
+--------------------
+* Fuzzy Matching & Levenshtein Distance 
+  https://github.com/dcousens/dmenu-levenshtein
 
-Requirements
-------------
-In order to build dmenu you need the Xlib header files.
+* Masked input
+  Really useful together with sudo -A 
 
+* CenterX, CenterY
+  Let's dmenu take the center stage
 
-Installation
-------------
-Edit config.mk to match your local setup (dmenu is installed into
-the /usr/local namespace by default).
+* Width
+  Really great if you don't want dmenu spanning
+  your entire screen width ;)
 
-Afterwards enter the following command to build and install dmenu
-(if necessary as root):
-
-    make clean install
-
-
-Running dmenu
--------------
-See the man page for details.
+* Lineheight
