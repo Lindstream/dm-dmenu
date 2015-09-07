@@ -8,7 +8,7 @@ Modifications:
   https://github.com/dcousens/dmenu-levenshtein
 
 * Masked input
-  Really useful together with sudo -A 
+  Really useful together with "sudo -A" 
 
 * CenterX, CenterY
   Let's dmenu take the center stage
@@ -18,3 +18,4 @@ Modifications:
   your entire screen width ;)
 
 * Lineheight
+  To loosen things up!

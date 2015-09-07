@@ -613,7 +613,7 @@ match(void) {
 		const char* itemText = items[i].text;
 		const int itemTextLength = strlen(itemText);
 
-		fitnesses[i] = matchLevenshtein(text, textLength, itemText, itemTextLength);
+		fitnesses[i] = matchFuzzy(text, textLength, itemText, itemTextLength);
 	}
 
 	if (textLength > 0) {
