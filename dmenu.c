@@ -71,6 +71,7 @@ static int screen;
 static Window root;
 static Drw *drw;
 static int sw, sh; /* X display screen geometry width, height */
+static int lineparam;  
 
 #include "config.h"
 
@@ -109,7 +110,7 @@ main(int argc, char *argv[]) {
 		else if(i+1 == argc)
 			usage();
 		/* these options take one argument */
-		else if(!strcmp(argv[i], "-l"))   /* number of lines in vertical list */
+		else if(!strcmp(argv[i], "-l"))  /* number of lines in vertical list */
 			lines = atoi(argv[++i]);
     	else if(!strcmp(argv[i], "-lh"))   /* minimum height of single line */
       		line_height = atoi(argv[++i]);
@@ -131,6 +132,10 @@ main(int argc, char *argv[]) {
       		width = atoi(argv[++i]);
 		else
 			usage();
+
+	/* keep track of org line param, used to centerY based on  */
+	/* original no. lines parameter - not the resulting list */
+	lineparam=lines;
 
 	if(!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
@@ -812,7 +817,7 @@ setup(void) {
 
 		/* ditto, for the height */
 		if (centerY) {
-			y = y + ((sh - mh) / 2);
+			y = y + ((sh - lineparam * bh) / 2);
 		}
 
 	}
@@ -841,7 +846,7 @@ setup(void) {
 void
 usage(void) {
 	fputs("usage: dmenu [-b] [-f] [-i] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
-	      "             [-w width] [-lh lineheight] [-center] [-centerx] [-centery]\n", stderr);
+	      "             [-w width] [-lh lineheight] [-center] [-centerx] [-centery]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-mask] [-v]\n", stderr);
 	exit(1);
 }

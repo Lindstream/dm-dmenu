@@ -11,7 +11,7 @@ Modifications:
   Really useful together with "sudo -A" 
 
 * CenterX, CenterY
-  Let's dmenu take the center stage
+  Let's dmenu take the center stage. CenterY respects lines-param and placement is calculated on desired height - not the resulting list.
 
 * Width
   Really great if you don't want dmenu spanning
@@ -19,3 +19,4 @@ Modifications:
 
 * Lineheight
   To loosen things up!
+
