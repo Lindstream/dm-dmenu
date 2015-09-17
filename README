@@ -10,8 +10,11 @@ Modifications:
 * Masked input
   Really useful together with "sudo -A" 
 
-* CenterX, CenterY
-  Let's dmenu take the center stage. CenterY respects lines-param and placement is calculated on desired height - not the resulting list.
+* CenterX
+  Puts dmenu on center stage. 
+
+* CenterY 
+  Respects lines-param and placement is calculated on desired height - not the resulting list.
 
 * Width
   Really great if you don't want dmenu spanning
